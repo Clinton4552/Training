@@ -1516,12 +1516,14 @@ function renderWorkoutContent() {
       else lastHint = w ? `Last: ${w} lbs × ${r || '?'}` : '';
     }
 
+    // Only treat a set as "logged/done" if it was completed in the CURRENT
+    // active session. Prior-session values still populate the boxes so you
+    // can see and adjust from last time, but they never arrive pre-ticked.
     let setsHtml = `<div class="set-table"><div class="set-col-hdr" style="grid-template-columns:${isBW ? '1fr 48px' : '1fr 1fr 48px'}">${isBW ? '<span>Reps</span><span></span>' : '<span>Lbs</span><span>Reps</span><span></span>'}</div>`;
     for (let s = 0; s < liveSets; s++) {
-      const logged = logs[s]?.done;
-      // Use today's log if it exists, otherwise prefill from last session
-      const wVal = logs[s]?.weight ?? (last[s]?.weight ?? '');
-      const rVal = logs[s]?.reps ?? (last[s]?.reps ?? '');
+      const logged = state.sessionActive && logs[s]?.done;
+      const wVal = (last[s]?.weight ?? logs[s]?.weight) ?? '';
+      const rVal = (last[s]?.reps ?? logs[s]?.reps) ?? '';
       if (isBW) {
         setsHtml += `
           <div class="set-row" style="grid-template-columns:1fr 48px">
@@ -1642,12 +1644,6 @@ function markSet(exIdx, setIdx) {
 function toggleSession() {
   state.sessionActive = !state.sessionActive;
   if (state.sessionActive) {
-    // Clear last session's ticks for this day so prefills show fresh
-    const day = PROGRAM[state.currentDay];
-    if (day.exercises) {
-      day.exercises.forEach((_, i) => { delete state.setLogs[`${state.currentDay}_${i}`]; });
-    }
-    delete state.completed[state.currentDay];
     elapsedSeconds = 0;
     startElapsed();
   } else {
