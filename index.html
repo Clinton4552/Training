@@ -112,6 +112,13 @@ body {
   color: var(--ink);
 }
 
+.week-progress-note {
+  padding: 0 20px 14px;
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
 /* ===== DAY HEADER STRIP ===== */
 .day-strip {
   display: flex;
@@ -337,6 +344,18 @@ body {
   color: #3b82f6;
   cursor: pointer;
   padding: 2px 0;
+}
+
+.last-hint {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #166534;
+  background: #dff5e8;
+  padding: 3px 9px;
+  border-radius: 10px;
+  margin-top: 6px;
+  margin-right: 6px;
 }
 
 .alt-box {
@@ -876,6 +895,7 @@ body {
     <span id="weekLabel">Week 1 · Foundation</span>
     <div class="week-step-btn" onclick="stepWeek(1)">+</div>
   </div>
+  <div class="week-progress-note" id="weekProgressNote"></div>
 
   <div class="session-banner">
     <div class="session-title" id="dayTitle">Monday</div>
@@ -996,7 +1016,8 @@ body {
       <strong>Build wider:</strong> Overhead Press + lateral raises (shoulders), pull-ups (lats)<br><br>
       <strong>Define narrower:</strong> Hip abduction, hip thrust, core anti-rotation<br><br>
       <strong>Reduce cortisol:</strong> 4 strength days, 1 conditioning day<br><br>
-      <strong>Friday — LA Fitness Spin Class:</strong> Zone 2-3 effort, not max intensity. The one session specifically targeting midsection fat without adding to weekly cortisol load.
+      <strong>Friday — Conditioning:</strong> Rower 20 min then incline treadmill walk 25 min, both at zone 2-3. Self-directed so it never depends on a class schedule. This is the one session specifically targeting midsection fat without adding to weekly training stress.<br><br>
+      <strong>Worth being honest about:</strong> one conditioning session a week is roughly 300-350 calories. It helps at the margin. Total food intake is the actual mechanism for fat loss, not the cardio.
     </div>
   </div>
 </div>
@@ -1101,17 +1122,17 @@ const PROGRAM = {
       { name: 'Cable Crunch', sets: 3, reps: '18', target: '3 Sets · 18 Reps', note: 'Upper abs', alt: 'No cable station — use Weighted Floor Crunch holding a plate.', yt: 'cable+crunch+form+tutorial' },
       { name: 'Bird Dog', sets: 3, reps: '12', target: '3 Sets · 12 Reps ea.', note: 'Lower back stability', bodyweight: true, alt: 'No floor space — this rarely happens, but Dead Bug on a mat works too.', yt: 'bird+dog+exercise+tutorial' },
     ] },
-  fri: { name: 'Friday', sub: 'LA Fitness Spin Class · Zone 2-3 Conditioning', type: 'conditioning',
+  fri: { name: 'Friday', sub: 'Conditioning · Rower + Incline Walk', type: 'conditioning',
     warmup: [
-      { name: 'Arrive 5-10 min early', sub: 'Light pedal, adjust bike fit', yt: 'spin+bike+setup+fit+tutorial' },
+      { name: 'Rower — very easy', sub: '5 min', yt: 'rowing+machine+warm+up' },
     ],
-    circuit: '45-60 min Spin Class. Ride at a controlled effort — you should be able to speak in short sentences during the steady sections. Save max effort for sprint intervals if the instructor calls them, but don\'t chase the front of the class. This is conditioning, not a competition.',
+    circuit: 'Block 1 — Rower, 20 min. Steady zone 2-3 at roughly 22-24 strokes per minute. Legs drive first, then back, then arms. If your grip fails before your lungs do, you are over-pulling with the arms.\n\nBlock 2 — Incline Treadmill Walk, 25 min. Speed 3.0-3.5 mph, incline 8-12%. Adjust the incline rather than the speed to hold the effort. Hands off the rails.\n\nTreat the full 45 minutes as one continuous steady effort, not two separate pushes.',
     exercises: [
-      { name: 'Post-Class Lateral Raise', sets: 3, reps: '15', target: '3 Sets · 15 Reps', note: 'Shoulder width — quick finisher after spin', circuit: true, alt: 'No DBs free — use Cable Lateral Raise or a resistance band.', yt: 'lateral+raise+tutorial' },
-      { name: 'Post-Class Hip Abduction', sets: 3, reps: '15', target: '3 Sets · 15 Reps', note: 'Glute medius — machine or band', circuit: true, alt: 'Machine busy — use Banded Side-Lying Leg Raise.', yt: 'hip+abduction+machine+tutorial' },
+      { name: 'Lateral Raise', sets: 3, reps: '15', target: '3 Sets · 15 Reps', note: 'Shoulder width finisher', circuit: true, alt: 'No DBs free — use Cable Lateral Raise or a resistance band.', yt: 'lateral+raise+tutorial' },
+      { name: 'Hip Abduction', sets: 3, reps: '15', target: '3 Sets · 15 Reps', note: 'Glute medius — machine or band', circuit: true, alt: 'Machine busy — use Banded Side-Lying Leg Raise.', yt: 'hip+abduction+machine+tutorial' },
     ] },
-  sat: { name: 'Saturday', sub: 'Active Recovery', type: 'rest' },
-  sun: { name: 'Sunday', sub: 'Full Rest + Prep', type: 'rest' },
+  sat: { name: 'Saturday', sub: 'Active Recovery · Outside the Gym', type: 'rest' },
+  sun: { name: 'Sunday', sub: 'Full Rest', type: 'rest' },
 };
 
 const PR_LIFTS = [
@@ -1160,7 +1181,7 @@ const DAYS = ['mon','tue','wed','thu','fri','sat','sun'];
 const DAY_LABELS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
 // ==================== STATE ====================
-let state = { currentDay: '', sessionActive: false, completed: {}, currentWeek: 1, prs: {}, history: [], setLogs: {} };
+let state = { currentDay: '', sessionActive: false, completed: {}, currentWeek: 1, prs: {}, history: [], setLogs: {}, sessionStartEpoch: null, restEndEpoch: null, restTotal: 90, lastWeights: {}, trainingDaysCompleted: 0 };
 
 function loadState() { try { const s = localStorage.getItem('ironStateV2'); if (s) state = { ...state, ...JSON.parse(s) }; } catch(e) {} }
 function saveState() { try { localStorage.setItem('ironStateV2', JSON.stringify(state)); } catch(e) {} }
@@ -1168,17 +1189,33 @@ function saveState() { try { localStorage.setItem('ironStateV2', JSON.stringify(
 // ==================== ELAPSED SESSION TIMER ====================
 let elapsedSeconds = 0;
 let elapsedInterval = null;
+let sessionStartEpoch = null;
 
-function startElapsed() {
-  elapsedInterval = setInterval(() => {
-    elapsedSeconds++;
-    document.getElementById('elapsedTime').textContent = fmtTime(elapsedSeconds);
-  }, 1000);
+function startElapsed(resumeFrom) {
+  sessionStartEpoch = resumeFrom || Date.now();
+  state.sessionStartEpoch = sessionStartEpoch;
+  saveState();
+  clearInterval(elapsedInterval);
+  tickElapsed();
+  elapsedInterval = setInterval(tickElapsed, 1000);
 }
 
-function stopElapsed() { clearInterval(elapsedInterval); }
+function tickElapsed() {
+  if (!sessionStartEpoch) return;
+  elapsedSeconds = Math.floor((Date.now() - sessionStartEpoch) / 1000);
+  const el = document.getElementById('elapsedTime');
+  if (el) el.textContent = fmtTime(elapsedSeconds);
+}
+
+function stopElapsed() {
+  clearInterval(elapsedInterval);
+  sessionStartEpoch = null;
+  state.sessionStartEpoch = null;
+  saveState();
+}
 
 function fmtTime(s) {
+  s = Math.max(0, s);
   const m = Math.floor(s / 60);
   const sec = s % 60;
   return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
@@ -1189,7 +1226,21 @@ let restTotal = 90;
 let restRemaining = 90;
 let restInterval = null;
 let restRunning = false;
+let restEndEpoch = null;
+let wakeLock = null;
 const RING_CIRC = 773;
+
+async function requestWakeLock() {
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLock = await navigator.wakeLock.request('screen');
+    }
+  } catch (e) {}
+}
+
+function releaseWakeLock() {
+  try { if (wakeLock) { wakeLock.release(); wakeLock = null; } } catch (e) {}
+}
 
 function openTimerSheet(seconds) {
   if (seconds) { restTotal = seconds; restRemaining = seconds; }
@@ -1207,26 +1258,45 @@ function closeTimerSheet(e) {
 
 function startRestTimer() {
   restRunning = true;
+  restEndEpoch = Date.now() + restRemaining * 1000;
+  state.restEndEpoch = restEndEpoch;
+  state.restTotal = restTotal;
+  saveState();
   document.getElementById('playPauseBtn').textContent = '⏸';
-  clearInterval(restInterval);
-  restInterval = setInterval(() => {
-    restRemaining--;
-    updateRing();
-    if (restRemaining <= 0) {
-      clearInterval(restInterval);
-      restRunning = false;
-      if ('vibrate' in navigator) navigator.vibrate([200,100,200]);
-      document.getElementById('restChip').classList.remove('active');
-      closeTimerSheet();
-    }
-  }, 1000);
   document.getElementById('restChip').classList.add('active');
+  requestWakeLock();
+  clearInterval(restInterval);
+  restInterval = setInterval(tickRest, 250);
+  tickRest();
+}
+
+function tickRest() {
+  if (!restEndEpoch) return;
+  restRemaining = Math.ceil((restEndEpoch - Date.now()) / 1000);
+  updateRing();
+  if (restRemaining <= 0) {
+    clearInterval(restInterval);
+    restRunning = false;
+    restRemaining = 0;
+    restEndEpoch = null;
+    state.restEndEpoch = null;
+    saveState();
+    releaseWakeLock();
+    if ('vibrate' in navigator) navigator.vibrate([200,100,200,100,300]);
+    document.getElementById('restChip').classList.remove('active');
+    closeTimerSheet();
+  }
 }
 
 function toggleTimerRun() {
   if (restRunning) {
     clearInterval(restInterval);
     restRunning = false;
+    restRemaining = Math.ceil((restEndEpoch - Date.now()) / 1000);
+    restEndEpoch = null;
+    state.restEndEpoch = null;
+    saveState();
+    releaseWakeLock();
     document.getElementById('playPauseBtn').textContent = '▶';
   } else {
     startRestTimer();
@@ -1234,8 +1304,17 @@ function toggleTimerRun() {
 }
 
 function adjustTimer(delta) {
-  restRemaining = Math.max(0, restRemaining + delta);
+  if (restRunning && restEndEpoch) {
+    restEndEpoch += delta * 1000;
+    if (restEndEpoch < Date.now()) restEndEpoch = Date.now();
+    state.restEndEpoch = restEndEpoch;
+    restRemaining = Math.ceil((restEndEpoch - Date.now()) / 1000);
+  } else {
+    restRemaining = Math.max(0, restRemaining + delta);
+  }
   restTotal = Math.max(restTotal, restRemaining);
+  state.restTotal = restTotal;
+  saveState();
   updateRing();
 }
 
@@ -1243,18 +1322,41 @@ function skipTimer() {
   clearInterval(restInterval);
   restRunning = false;
   restRemaining = 0;
+  restEndEpoch = null;
+  state.restEndEpoch = null;
+  saveState();
+  releaseWakeLock();
   document.getElementById('restChip').classList.remove('active');
   closeTimerSheet();
 }
 
 function updateRing() {
-  const t = fmtTime(restRemaining);
-  document.getElementById('ringTime').textContent = t;
-  document.getElementById('restChipTime').textContent = t;
-  const progress = restTotal > 0 ? restRemaining / restTotal : 0;
+  const t = fmtTime(Math.max(0, restRemaining));
+  const ringEl = document.getElementById('ringTime');
+  const chipEl = document.getElementById('restChipTime');
+  if (ringEl) ringEl.textContent = t;
+  if (chipEl) chipEl.textContent = t;
+  const progress = restTotal > 0 ? Math.max(0, restRemaining) / restTotal : 0;
   const offset = RING_CIRC * (1 - progress);
-  document.getElementById('ringProgress').style.strokeDashoffset = offset;
+  const circle = document.getElementById('ringProgress');
+  if (circle) circle.style.strokeDashoffset = offset;
 }
+
+// Re-sync both timers whenever the app comes back to the foreground
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    if (sessionStartEpoch) tickElapsed();
+    if (restRunning && restEndEpoch) {
+      tickRest();
+      requestWakeLock();
+    }
+  }
+});
+
+window.addEventListener('focus', () => {
+  if (sessionStartEpoch) tickElapsed();
+  if (restRunning && restEndEpoch) tickRest();
+});
 
 // ==================== VIDEO SHEET ====================
 function openVideoSheet(name, yt) {
@@ -1305,6 +1407,8 @@ function getCurrentDayKey() {
 
 function stepWeek(delta) {
   state.currentWeek = Math.min(16, Math.max(1, state.currentWeek + delta));
+  // Keep the session counter roughly in sync so auto-advance doesn't fight a manual override
+  state.trainingDaysCompleted = (state.currentWeek - 1) * 5;
   saveState();
   renderToday();
 }
@@ -1318,6 +1422,14 @@ function renderToday() {
   document.getElementById('daySub').textContent = day.sub;
   const phase = getPhase();
   document.getElementById('weekLabel').textContent = `Week ${state.currentWeek} · ${phase.name}`;
+
+  const doneThisWeek = (state.trainingDaysCompleted || 0) % 5;
+  const noteEl = document.getElementById('weekProgressNote');
+  if (noteEl) {
+    noteEl.textContent = state.currentWeek >= 16
+      ? `${state.trainingDaysCompleted || 0} training days completed`
+      : `${doneThisWeek} of 5 sessions done this week · advances automatically`;
+  }
 
   const tags = document.getElementById('dayTags');
   tags.innerHTML = '';
@@ -1350,8 +1462,8 @@ function renderWorkoutContent() {
         <div class="rest-emoji">${state.currentDay === 'sat' ? '🚶' : '😴'}</div>
         <div class="rest-title">${day.sub}</div>
         <div class="rest-text">${state.currentDay === 'sat'
-          ? '30–45 min walk or light cycle. Keep your supplement schedule. This is where adaptation happens.'
-          : 'Full rest day. No gym. 20 min Sunday prep — overnight oats, boiled eggs, portion nuts for the week ahead.'}</div>
+          ? 'No gym. A 30-45 min walk outdoors is enough — it aids recovery without adding training stress. If you skip it entirely, that is fine too. Saturday is not where the results come from.'
+          : 'Full rest. This is where the week\'s training actually turns into adaptation. Prioritise sleep tonight and tomorrow night.'}</div>
       </div>`;
     return;
   }
@@ -1378,7 +1490,7 @@ function renderWorkoutContent() {
 
   // Circuit note (Friday)
   if (day.circuit) {
-    content.innerHTML += `<div class="circuit-note"><strong>Conditioning Circuit</strong>${day.circuit}</div>`;
+    content.innerHTML += `<div class="circuit-note"><strong>Conditioning</strong>${day.circuit.replace(/\n/g, '<br>')}</div>`;
   }
 
   content.innerHTML += `<div class="section-label">${day.circuit ? 'Accessory Work' : 'Main Lifts'}</div>`;
@@ -1392,21 +1504,37 @@ function renderWorkoutContent() {
     const liveTarget = getMainLiftTarget(ex);
     const liveSets = liveTarget.sets;
     const liveReps = liveTarget.reps;
+    const last = state.lastWeights[ex.name] || [];
 
+    // Build a short "last session" hint
+    let lastHint = '';
+    const lastEntries = last.filter(l => l && (l.weight || l.reps));
+    if (lastEntries.length) {
+      const w = lastEntries[lastEntries.length - 1].weight;
+      const r = lastEntries[lastEntries.length - 1].reps;
+      if (isBW) lastHint = r ? `Last: ${r} reps` : '';
+      else lastHint = w ? `Last: ${w} lbs × ${r || '?'}` : '';
+    }
+
+    // Only treat a set as "logged/done" if it was completed in the CURRENT
+    // active session. Prior-session values still populate the boxes so you
+    // can see and adjust from last time, but they never arrive pre-ticked.
     let setsHtml = `<div class="set-table"><div class="set-col-hdr" style="grid-template-columns:${isBW ? '1fr 48px' : '1fr 1fr 48px'}">${isBW ? '<span>Reps</span><span></span>' : '<span>Lbs</span><span>Reps</span><span></span>'}</div>`;
     for (let s = 0; s < liveSets; s++) {
-      const logged = logs[s]?.done;
+      const logged = state.sessionActive && logs[s]?.done;
+      const wVal = (last[s]?.weight ?? logs[s]?.weight) ?? '';
+      const rVal = (last[s]?.reps ?? logs[s]?.reps) ?? '';
       if (isBW) {
         setsHtml += `
           <div class="set-row" style="grid-template-columns:1fr 48px">
-            <input class="set-input ${logged?'logged':''}" type="number" inputmode="numeric" placeholder="${liveReps}" id="r_${idx}_${s}" value="${logs[s]?.reps||''}" onchange="logSet(${idx},${s})">
+            <input class="set-input ${logged?'logged':''}" type="number" inputmode="numeric" placeholder="${liveReps}" id="r_${idx}_${s}" value="${rVal}" onchange="logSet(${idx},${s})">
             <button class="set-check ${logged?'done':''}" onclick="markSet(${idx},${s})" id="sc_${idx}_${s}">${logged?'✓':''}</button>
           </div>`;
       } else {
         setsHtml += `
           <div class="set-row">
-            <input class="set-input ${logged?'logged':''}" type="number" inputmode="decimal" placeholder="—" id="w_${idx}_${s}" value="${logs[s]?.weight||''}" onchange="logSet(${idx},${s})">
-            <input class="set-input ${logged?'logged':''}" type="number" inputmode="numeric" placeholder="${liveReps}" id="r_${idx}_${s}" value="${logs[s]?.reps||''}" onchange="logSet(${idx},${s})">
+            <input class="set-input ${logged?'logged':''}" type="number" inputmode="decimal" placeholder="—" id="w_${idx}_${s}" value="${wVal}" onchange="logSet(${idx},${s})">
+            <input class="set-input ${logged?'logged':''}" type="number" inputmode="numeric" placeholder="${liveReps}" id="r_${idx}_${s}" value="${rVal}" onchange="logSet(${idx},${s})">
             <button class="set-check ${logged?'done':''}" onclick="markSet(${idx},${s})" id="sc_${idx}_${s}">${logged?'✓':''}</button>
           </div>`;
       }
@@ -1423,6 +1551,7 @@ function renderWorkoutContent() {
             <div class="ex-name">${ex.name}</div>
             <div class="ex-meta"><span>${liveSets} Sets</span><span>${liveReps} Reps</span><span>Rest ${fmtTime(getRestSeconds(ex))}</span></div>
             <div class="ex-note">${ex.note}</div>
+            ${lastHint ? `<div class="last-hint">${lastHint}</div>` : ''}
             ${ex.main ? `<div class="pr-flag">MAIN LIFT · ${getPhase().intensity}</div>` : ''}
             ${ex.pr && !ex.main ? '<div class="pr-flag">PR LIFT</div>' : ''}
           </div>
@@ -1456,6 +1585,16 @@ function logSet(exIdx, setIdx) {
   const wInput = document.getElementById(`w_${exIdx}_${setIdx}`);
   if (wInput) state.setLogs[key][setIdx].weight = wInput.value;
   state.setLogs[key][setIdx].reps = document.getElementById(`r_${exIdx}_${setIdx}`)?.value;
+
+  // Carry forward to next session, keyed by exercise name
+  const ex = PROGRAM[state.currentDay]?.exercises?.[exIdx];
+  if (ex) {
+    if (!state.lastWeights[ex.name]) state.lastWeights[ex.name] = [];
+    state.lastWeights[ex.name][setIdx] = {
+      weight: state.setLogs[key][setIdx].weight,
+      reps: state.setLogs[key][setIdx].reps,
+    };
+  }
   saveState();
 }
 
@@ -1464,15 +1603,30 @@ function markSet(exIdx, setIdx) {
   if (!state.setLogs[key]) state.setLogs[key] = [];
   if (!state.setLogs[key][setIdx]) state.setLogs[key][setIdx] = {};
   const wasLogged = state.setLogs[key][setIdx].done;
+
+  // Capture whatever is currently in the inputs, including prefilled values
+  const wInput = document.getElementById(`w_${exIdx}_${setIdx}`);
+  const rInput = document.getElementById(`r_${exIdx}_${setIdx}`);
+  if (wInput) state.setLogs[key][setIdx].weight = wInput.value;
+  if (rInput) state.setLogs[key][setIdx].reps = rInput.value;
+
   state.setLogs[key][setIdx].done = !wasLogged;
-  saveState();
 
   const day = PROGRAM[state.currentDay];
   const ex = day.exercises[exIdx];
   const liveSets = getMainLiftTarget(ex).sets;
 
+  // Carry forward
+  if (ex) {
+    if (!state.lastWeights[ex.name]) state.lastWeights[ex.name] = [];
+    state.lastWeights[ex.name][setIdx] = {
+      weight: state.setLogs[key][setIdx].weight,
+      reps: state.setLogs[key][setIdx].reps,
+    };
+  }
+  saveState();
+
   if (!wasLogged) {
-    // mark exercise complete if all sets done
     const allDone = Array.from({length: liveSets}, (_,i) => state.setLogs[key][i]?.done).every(Boolean);
     if (allDone) {
       if (!state.completed[state.currentDay]) state.completed[state.currentDay] = {};
@@ -1504,6 +1658,18 @@ function toggleSession() {
       duration: fmtTime(elapsedSeconds),
       week: state.currentWeek,
     });
+
+    // Advance the week automatically every 4 completed training days,
+    // rather than relying on the calendar or a manual tap
+    if (day.type === 'strength' || day.type === 'conditioning') {
+      state.trainingDaysCompleted = (state.trainingDaysCompleted || 0) + 1;
+      const newWeek = Math.min(16, Math.floor(state.trainingDaysCompleted / 5) + 1);
+      if (newWeek !== state.currentWeek) {
+        state.currentWeek = newWeek;
+        showToast(`Week ${newWeek} unlocked ✓`);
+      }
+    }
+
     showToast('Session saved ✓');
   }
   saveState();
@@ -1577,7 +1743,27 @@ function showToast(msg) {
 function init() {
   loadState();
   if (!state.currentDay) state.currentDay = getCurrentDayKey();
-  updateRing();
+
+  // Resume an in-progress session timer
+  if (state.sessionActive && state.sessionStartEpoch) {
+    startElapsed(state.sessionStartEpoch);
+  }
+
+  // Resume an in-progress rest timer
+  if (state.restEndEpoch && state.restEndEpoch > Date.now()) {
+    restTotal = state.restTotal || 90;
+    restRemaining = Math.ceil((state.restEndEpoch - Date.now()) / 1000);
+    restEndEpoch = state.restEndEpoch;
+    restRunning = true;
+    document.getElementById('restChip').classList.add('active');
+    clearInterval(restInterval);
+    restInterval = setInterval(tickRest, 250);
+    tickRest();
+  } else {
+    state.restEndEpoch = null;
+    updateRing();
+  }
+
   renderToday();
 }
 init();
